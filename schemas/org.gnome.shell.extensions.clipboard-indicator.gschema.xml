@@ -104,6 +104,22 @@
         </description>
     </key>
 
+    <key name="mathpix-api-key" type="s">
+        <default>""</default>
+        <summary>Mathpix API key</summary>
+        <description>
+            API key retrieved from the Mathpix account.
+        </description>
+    </key>
+
+    <key name="mathpix-app-id" type="s">
+        <default>""</default>
+        <summary>Show confirmation dialog on Clear History</summary>
+        <description>
+            APP id retrieved from teh Mathpix account.
+        </description>
+    </key>
+
     <key name="strip-text" type="b">
         <default>false</default>
         <summary>Remove whitespace around text</summary>

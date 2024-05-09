@@ -7,7 +7,7 @@ import { ExtensionPreferences, gettext as _ } from 'resource:///org/gnome/Shell/
 import { PrefsFields } from './constants.js';
 
 export default class ClipboardIndicatorPreferences extends ExtensionPreferences {
-    fillPreferencesWindow (window) {
+    fillPreferencesWindow(window) {
         window._settings = this.getSettings();
         const settingsUI = new Settings(window._settings);
         const page = new Adw.PreferencesPage();
@@ -16,13 +16,14 @@ export default class ClipboardIndicatorPreferences extends ExtensionPreferences 
         page.add(settingsUI.limits);
         page.add(settingsUI.topbar);
         page.add(settingsUI.notifications);
+        page.add(settingsUI.mathpix);
         page.add(settingsUI.shortcuts);
         window.add(page);
     }
 }
 
 class Settings {
-    constructor (schema) {
+    constructor(schema) {
         this.schema = schema;
 
         this.field_size = new Adw.SpinRow({
@@ -108,12 +109,21 @@ class Settings {
             title: _("Clear clipboard history on system reboot")
         });
 
-        this.ui =  new Adw.PreferencesGroup({ title: _('UI') });
-        this.behavior = new Adw.PreferencesGroup({title: _('Behavior')});
-        this.limits =  new Adw.PreferencesGroup({ title: _('Limits') });
-        this.topbar =  new Adw.PreferencesGroup({ title: _('Topbar') });
-        this.notifications =  new Adw.PreferencesGroup({ title: _('Notifications') });
-        this.shortcuts =  new Adw.PreferencesGroup({ title: _('Shortcuts') });
+        this.field_mathpix_app_id = new Adw.EntryRow({
+            title: _("Mathpix App ID"),
+        });
+
+        this.field_mathpix_api_key = new Adw.EntryRow({
+            title: _("Mathpix API Key"),
+        });
+
+        this.ui = new Adw.PreferencesGroup({ title: _('UI') });
+        this.behavior = new Adw.PreferencesGroup({ title: _('Behavior') });
+        this.limits = new Adw.PreferencesGroup({ title: _('Limits') });
+        this.topbar = new Adw.PreferencesGroup({ title: _('Topbar') });
+        this.notifications = new Adw.PreferencesGroup({ title: _('Notifications') });
+        this.mathpix = new Adw.PreferencesGroup({ title: _('Mathpix') });
+        this.shortcuts = new Adw.PreferencesGroup({ title: _('Shortcuts') });
 
         this.ui.add(this.field_preview_size);
         this.ui.add(this.field_move_item_first);
@@ -135,6 +145,9 @@ class Settings {
         this.notifications.add(this.field_notification_toggle);
         this.notifications.add(this.field_confirm_clear_toggle);
 
+        this.mathpix.add(this.field_mathpix_app_id);
+        this.mathpix.add(this.field_mathpix_api_key);
+
         this.#buildShorcuts(this.shortcuts);
 
         this.schema.bind(PrefsFields.HISTORY_SIZE, this.field_size, 'value', Gio.SettingsBindFlags.DEFAULT);
@@ -143,6 +156,8 @@ class Settings {
         this.schema.bind(PrefsFields.CACHE_ONLY_FAVORITE, this.field_cache_disable, 'active', Gio.SettingsBindFlags.DEFAULT);
         this.schema.bind(PrefsFields.NOTIFY_ON_COPY, this.field_notification_toggle, 'active', Gio.SettingsBindFlags.DEFAULT);
         this.schema.bind(PrefsFields.CONFIRM_ON_CLEAR, this.field_confirm_clear_toggle, 'active', Gio.SettingsBindFlags.DEFAULT);
+        this.schema.bind(PrefsFields.MATHPIX_APP_ID, this.field_mathpix_app_id, 'text', Gio.SettingsBindFlags.DEFAULT);
+        this.schema.bind(PrefsFields.MATHPIX_API_KEY, this.field_mathpix_api_key, 'text', Gio.SettingsBindFlags.DEFAULT);
         this.schema.bind(PrefsFields.MOVE_ITEM_FIRST, this.field_move_item_first, 'active', Gio.SettingsBindFlags.DEFAULT);
         this.schema.bind(PrefsFields.KEEP_SELECTED_ON_CLEAR, this.field_keep_selected_on_clear, 'active', Gio.SettingsBindFlags.DEFAULT);
         this.schema.bind(PrefsFields.TOPBAR_DISPLAY_MODE_ID, this.field_display_mode, 'selected', Gio.SettingsBindFlags.DEFAULT);
@@ -155,7 +170,7 @@ class Settings {
         this.schema.bind(PrefsFields.CLEAR_ON_BOOT, this.field_clear_on_boot, 'active', Gio.SettingsBindFlags.DEFAULT);
     }
 
-    #createDisplayModeOptions () {
+    #createDisplayModeOptions() {
         let options = [
             _("Icon"),
             _("Clipboard Content"),
@@ -177,7 +192,7 @@ class Settings {
         [PrefsFields.BINDING_NEXT_ENTRY]: _("Next entry")
     };
 
-    #buildShorcuts (group) {
+    #buildShorcuts(group) {
         this.field_keybinding_activation = new Adw.SwitchRow({
             title: _("Enable shortcuts")
         });
@@ -195,7 +210,7 @@ class Settings {
         }
     }
 
-    #createShortcutButton (pref) {
+    #createShortcutButton(pref) {
         const button = new Gtk.Button({
             has_frame: false
         });

@@ -35,6 +35,8 @@ let ENABLE_KEYBINDING = true;
 let PRIVATEMODE = false;
 let NOTIFY_ON_COPY = true;
 let CONFIRM_ON_CLEAR = true;
+let MATHPIX_APP_ID = "";
+let MATHPIX_API_KEY = "";
 let MAX_TOPBAR_LENGTH = 15;
 let TOPBAR_DISPLAY_MODE = 1; //0 - only icon, 1 - only clipboard content, 2 - both, 3 - neither
 let CLEAR_ON_BOOT = false;
@@ -426,7 +428,7 @@ const ClipboardIndicator = GObject.registerClass({
         // when focus is at the last element of the displayed list
         let beforeMenuItem = this.clipItemsRadioGroup[currentIndex + 1];
         if (beforeMenuItem.actor.visible) {
-          return beforeMenuItem; 
+            return beforeMenuItem;
         }
 
         return null;
@@ -584,7 +586,7 @@ const ClipboardIndicator = GObject.registerClass({
         this.dialogManager.open(title, message, sub_message, _("Clear"), _("Cancel"), () => {
             this._clearHistory();
         }
-      );
+        );
     }
 
     _clearHistory() {
@@ -918,6 +920,8 @@ const ClipboardIndicator = GObject.registerClass({
         MOVE_ITEM_FIRST = settings.get_boolean(PrefsFields.MOVE_ITEM_FIRST);
         NOTIFY_ON_COPY = settings.get_boolean(PrefsFields.NOTIFY_ON_COPY);
         CONFIRM_ON_CLEAR = settings.get_boolean(PrefsFields.CONFIRM_ON_CLEAR);
+        MATHPIX_APP_ID = settings.get_string(PrefsFields.MATHPIX_APP_ID);
+        MATHPIX_API_KEY = settings.get_string(PrefsFields.MATHPIX_API_KEY);
         ENABLE_KEYBINDING = settings.get_boolean(PrefsFields.ENABLE_KEYBINDING);
         MAX_TOPBAR_LENGTH = settings.get_int(PrefsFields.TOPBAR_PREVIEW_SIZE);
         TOPBAR_DISPLAY_MODE = settings.get_int(PrefsFields.TOPBAR_DISPLAY_MODE_ID);
@@ -1103,9 +1107,23 @@ const ClipboardIndicator = GObject.registerClass({
     }
 
     #latexPasteItem(menuItem) {
+        //Check if mathpix api key and app id are not empty
+        if (MATHPIX_API_KEY === '' || MATHPIX_APP_ID === '') {
+            this._showNotification('Mathpix API key and app id are required');
+            return;
+        }
+
         function send_request(url, mimetype, image) {
             let message = Soup.Message.new('POST', url);
             let _httpSession = new Soup.Session();
+            message.request_headers.append(
+                'app_id',
+                MATHPIX_API_KEY
+            );
+            message.request_headers.append(
+                'app_key',
+                MATHPIX_APP_ID
+            );
 
             //Set request body containing the image itself and paramaters
             let data = {
@@ -1133,16 +1151,24 @@ const ClipboardIndicator = GObject.registerClass({
             return JSON.parse(content);
         }
         let response = send_request('https://api.mathpix.com/v3/latex', menuItem.entry.mimetype(), menuItem.entry.getBase64());
-        console.log(response["text"]);
+
+        //Check if latex_confidence_rate is in response
+        if (!response.hasOwnProperty('latex_confidence_rate')) {
+            this._showNotification('Mathpix error: ' + response['error']);
+            return;
+        }
 
         //Get the text field from the response and convert it to bytes
         let response_bytes = new TextEncoder().encode(response["text"])
+        // let response_bytes = new TextEncoder().encode("test")
         //Create a clipboard etnry based on that
         //TODO: improve this workflow, because we effectively convert from bytes to string to bytes to string
         menuItem.entry = new ClipboardEntry('text/plain;charset=utf-8', response_bytes, false);
 
         //Finally use the updated menuItem to run the rest of the routine
         this.#pasteItem(menuItem);
+
+        this._showNotification(_("Mathpix result copied!"));
     }
 
     #pasteItem(menuItem) {
