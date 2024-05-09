@@ -284,7 +284,7 @@ export class ClipboardEntry {
         let entry_string;
         let response = new TextDecoder().decode(this.#bytes);
         let jsonResonse = JSON.parse(response);
-        if (this.isMathPixText()) {
+        if (this.#mathPixText) {
             //Get the text field from the response and convert it to bytes
             entry_string = jsonResonse["text"]
         }
@@ -321,12 +321,8 @@ export class ClipboardEntry {
         this.#favorite = !!val;
     }
 
-    isMathPixText() {
-        return this.#mathPixText;
-    }
-
-    setMathPixText(val) {
-        this.#mathPixText = !!val;
+    toggleMathPixText() {
+        this.#mathPixText = !this.#mathPixText;
     }
 
     isText() {

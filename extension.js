@@ -143,6 +143,7 @@ const ClipboardIndicator = GObject.registerClass({
             this._buttonText.set_text("...")
         } else {
             if (entry.isText() || entry.isMathPix()) {
+                console.log(entry.getStringValue());
                 this._buttonText.set_text(this._truncate(entry.getStringValue(), MAX_TOPBAR_LENGTH));
                 this._buttonImgPreview.destroy_all_children();
             }
@@ -394,7 +395,7 @@ const ClipboardIndicator = GObject.registerClass({
 
     _setEntryLabel(menuItem) {
         const { entry } = menuItem;
-        if (entry.isText()) {
+        if (entry.isText() || entry.isMathPix()) {
             menuItem.label.set_text(this._truncate(entry.getStringValue(), MAX_ENTRY_LENGTH));
         }
         else if (entry.isImage()) {
@@ -1176,11 +1177,11 @@ const ClipboardIndicator = GObject.registerClass({
             return;
         }
 
-        // let response_bytes = new TextEncoder().encode(JSON.stringify(response))
-        let response_bytes = new TextEncoder().encode(response['text'])
+        let response_bytes = new TextEncoder().encode(JSON.stringify(response))
+        // let response_bytes = new TextEncoder().encode(response['text'])
         //Create a clipboard etnry based on that
-        // menuItem.entry = new ClipboardEntry('mathpix', response_bytes, false);
-        menuItem.entry = new ClipboardEntry('text/plain;charset=utf-8', response_bytes, false);
+        menuItem.entry = new ClipboardEntry('mathpix', response_bytes, false);
+        // menuItem.entry = new ClipboardEntry('text/plain;charset=utf-8', response_bytes, false);
 
         //Finally use the updated menuItem to run the rest of the routine
         this.#pasteItem(menuItem);
@@ -1196,6 +1197,7 @@ const ClipboardIndicator = GObject.registerClass({
 
             //Use this custom update method to only set the bytes and keep the entry itself unchanged
             this.#overwriteBytes(menuItem.entry, entry_bytes, 'text/plain;charset=utf-8');
+
         }
         else {
             this.#updateClipboard(menuItem.entry);
@@ -1224,7 +1226,7 @@ const ClipboardIndicator = GObject.registerClass({
                     this.#overwriteBytes(menuItem.entry, entry_bytes, 'text/plain;charset=utf-8');
 
                     //Toggle mathpix text field
-                    menuItem.entry.setMathPixText(menuItem.entry.isMathPixText());
+                    menuItem.entry.toggleMathPixText();
                 }
                 else {
 
