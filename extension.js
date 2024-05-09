@@ -19,7 +19,7 @@ import { DialogManager } from './confirmDialog.js';
 import { PrefsFields } from './constants.js';
 import { Keyboard } from './keyboard.js';
 
-const ByteArray = imports.byteArray;
+// const ByteArray = imports.byteArray;
 
 const CLIPBOARD_TYPE = St.ClipboardType.CLIPBOARD;
 
@@ -512,7 +512,25 @@ const ClipboardIndicator = GObject.registerClass({
         menuItem.latexBtn.connect('clicked',
             () => this.#latexPasteItem(menuItem)
         );
-        menuItem.actor.add_child(menuItem.latexBtn);
+        menuItem.actor.add_child(menuItem.latexBtn, "latex");
+
+        // // Text button
+        // menuItem.textBtn = new St.Button({
+        //     style_class: 'ci-action-btn',
+        //     can_focus: true,
+        //     child: new St.Icon({
+        //         icon_name: 'view-refresh-symbolic',
+        //         style_class: 'system-status-icon'
+        //     }),
+        //     x_align: Clutter.ActorAlign.END,
+        //     x_expand: false,
+        //     y_expand: true,
+        //     visible: entry.mimetype().includes('image')
+        // });
+        // menuItem.textBtn.connect('clicked',
+        //     () => this.#latexPasteItem(menuItem, "text")
+        // );
+        // menuItem.actor.add_child(menuItem.textBtn);
 
         // Paste button
         menuItem.pasteBtn = new St.Button({
@@ -1107,9 +1125,10 @@ const ClipboardIndicator = GObject.registerClass({
     }
 
     #latexPasteItem(menuItem) {
+        Exception
         //Check if mathpix api key and app id are not empty
         if (MATHPIX_API_KEY === '' || MATHPIX_APP_ID === '') {
-            this._showNotification('Mathpix API key and app id are required');
+            this._showNotification('Mathpix API key and app id are required. Check the extension settings.');
             return;
         }
 
@@ -1118,11 +1137,11 @@ const ClipboardIndicator = GObject.registerClass({
             let _httpSession = new Soup.Session();
             message.request_headers.append(
                 'app_id',
-                MATHPIX_API_KEY
+                MATHPIX_APP_ID
             );
             message.request_headers.append(
                 'app_key',
-                MATHPIX_APP_ID
+                MATHPIX_API_KEY
             );
 
             //Set request body containing the image itself and paramaters
@@ -1164,7 +1183,7 @@ const ClipboardIndicator = GObject.registerClass({
         //Create a clipboard etnry based on that
         //TODO: improve this workflow, because we effectively convert from bytes to string to bytes to string
         menuItem.entry = new ClipboardEntry('text/plain;charset=utf-8', response_bytes, false);
-
+        menuItem.mathpix_response = response;
         //Finally use the updated menuItem to run the rest of the routine
         this.#pasteItem(menuItem);
 
