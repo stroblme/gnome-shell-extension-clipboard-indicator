@@ -142,7 +142,7 @@ const ClipboardIndicator = GObject.registerClass({
             this._buttonImgPreview.destroy_all_children();
             this._buttonText.set_text("...")
         } else {
-            if (entry.isText()) {
+            if (entry.isText() || entry.isMathPix()) {
                 this._buttonText.set_text(this._truncate(entry.getStringValue(), MAX_TOPBAR_LENGTH));
                 this._buttonImgPreview.destroy_all_children();
             }
@@ -497,7 +497,7 @@ const ClipboardIndicator = GObject.registerClass({
         );
 
         // Latex button
-        menuItem.latexBtn = new St.Button({
+        menuItem.mathpixBtn = new St.Button({
             style_class: 'ci-action-btn',
             can_focus: true,
             child: new St.Icon({
@@ -507,30 +507,30 @@ const ClipboardIndicator = GObject.registerClass({
             x_align: Clutter.ActorAlign.END,
             x_expand: false,
             y_expand: true,
-            visible: entry.mimetype().includes('image')
+            visible: entry.isImage()
         });
-        menuItem.latexBtn.connect('clicked',
-            () => this.#latexPasteItem(menuItem)
+        menuItem.mathpixBtn.connect('clicked',
+            () => this.#mathpixPasteItem(menuItem)
         );
-        menuItem.actor.add_child(menuItem.latexBtn, "latex");
+        menuItem.actor.add_child(menuItem.mathpixBtn);
 
-        // // Text button
-        // menuItem.textBtn = new St.Button({
-        //     style_class: 'ci-action-btn',
-        //     can_focus: true,
-        //     child: new St.Icon({
-        //         icon_name: 'view-refresh-symbolic',
-        //         style_class: 'system-status-icon'
-        //     }),
-        //     x_align: Clutter.ActorAlign.END,
-        //     x_expand: false,
-        //     y_expand: true,
-        //     visible: entry.mimetype().includes('image')
-        // });
-        // menuItem.textBtn.connect('clicked',
-        //     () => this.#latexPasteItem(menuItem, "text")
-        // );
-        // menuItem.actor.add_child(menuItem.textBtn);
+        // Switch Latex-Text button
+        menuItem.swLatexTextBtn = new St.Button({
+            style_class: 'ci-action-btn',
+            can_focus: true,
+            child: new St.Icon({
+                icon_name: 'dialog-information-symbolic',
+                style_class: 'system-status-icon'
+            }),
+            x_align: Clutter.ActorAlign.END,
+            x_expand: false,
+            y_expand: true,
+            visible: entry.isMathPix()
+        });
+        menuItem.swLatexTextBtn.connect('clicked',
+            () => this.#pasteItem(menuItem)
+        );
+        menuItem.actor.add_child(menuItem.swLatexTextBtn);
 
         // Paste button
         menuItem.pasteBtn = new St.Button({
@@ -1124,8 +1124,7 @@ const ClipboardIndicator = GObject.registerClass({
         this.menu.toggle();
     }
 
-    #latexPasteItem(menuItem) {
-        Exception
+    #mathpixPasteItem(menuItem) {
         //Check if mathpix api key and app id are not empty
         if (MATHPIX_API_KEY === '' || MATHPIX_APP_ID === '') {
             this._showNotification('Mathpix API key and app id are required. Check the extension settings.');
@@ -1177,13 +1176,12 @@ const ClipboardIndicator = GObject.registerClass({
             return;
         }
 
-        //Get the text field from the response and convert it to bytes
-        let response_bytes = new TextEncoder().encode(response["text"])
-        // let response_bytes = new TextEncoder().encode("test")
+        // let response_bytes = new TextEncoder().encode(JSON.stringify(response))
+        let response_bytes = new TextEncoder().encode(response['text'])
         //Create a clipboard etnry based on that
-        //TODO: improve this workflow, because we effectively convert from bytes to string to bytes to string
+        // menuItem.entry = new ClipboardEntry('mathpix', response_bytes, false);
         menuItem.entry = new ClipboardEntry('text/plain;charset=utf-8', response_bytes, false);
-        menuItem.mathpix_response = response;
+
         //Finally use the updated menuItem to run the rest of the routine
         this.#pasteItem(menuItem);
 
@@ -1191,10 +1189,17 @@ const ClipboardIndicator = GObject.registerClass({
     }
 
     #pasteItem(menuItem) {
-        this.menu.close();
         const currentlySelected = this._getCurrentlySelectedItem();
         this.preventIndicatorUpdate = true;
-        this.#updateClipboard(menuItem.entry);
+        if (menuItem.entry.isMathPix()) {
+            let entry_bytes = menuItem.entry.getMathPixBytes();
+
+            //Use this custom update method to only set the bytes and keep the entry itself unchanged
+            this.#overwriteBytes(menuItem.entry, entry_bytes, 'text/plain;charset=utf-8');
+        }
+        else {
+            this.#updateClipboard(menuItem.entry);
+        }
         this._pastingKeypressTimeout = setTimeout(() => {
             if (this.keyboard.purpose === Clutter.InputContentPurpose.TERMINAL) {
                 this.keyboard.press(Clutter.KEY_Control_L);
@@ -1213,7 +1218,18 @@ const ClipboardIndicator = GObject.registerClass({
 
             this._pastingResetTimeout = setTimeout(() => {
                 this.preventIndicatorUpdate = false;
-                this.#updateClipboard(currentlySelected.entry);
+                if (currentlySelected.entry.isMathPix()) {
+                    let entry_bytes = menuItem.entry.getMathPixBytes();
+
+                    this.#overwriteBytes(menuItem.entry, entry_bytes, 'text/plain;charset=utf-8');
+
+                    //Toggle mathpix text field
+                    menuItem.entry.setMathPixText(menuItem.entry.isMathPixText());
+                }
+                else {
+
+                    this.#updateClipboard(currentlySelected.entry);
+                }
             }, 50);
         }, 50);
     }
@@ -1230,10 +1246,16 @@ const ClipboardIndicator = GObject.registerClass({
         this.#updateIndicatorContent(null);
     }
 
-    #updateClipboard(entry) {
-        this.extension.clipboard.set_content(CLIPBOARD_TYPE, entry.mimetype(), entry.asBytes());
+    //similar to updateClipboard, but does not infer the data from the entry
+    #overwriteBytes(entry, bytes, mimetype) {
+        this.extension.clipboard.set_content(CLIPBOARD_TYPE, mimetype, bytes);
         this.#updateIndicatorContent(entry);
     }
+
+    #updateClipboard(entry) {
+        this.#overwriteBytes(entry, entry.asBytes(), entry.mimetype());
+    }
+
 
     async #getClipboardContent() {
         const mimetypes = [

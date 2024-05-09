@@ -209,6 +209,7 @@ export class ClipboardEntry {
     #mimetype;
     #bytes;
     #favorite;
+    #mathPixText = true;
 
     static #decode(contents) {
         return Uint8Array.from(contents.match(/.{1,2}/g).map((byte) => parseInt(byte, 16)));
@@ -220,6 +221,9 @@ export class ClipboardEntry {
         let bytes;
 
         if (mimetype.startsWith('text/')) {
+            bytes = new TextEncoder().encode(jsonEntry.contents);
+        }
+        else if (mimetype.startsWith('mathpix')) {
             bytes = new TextEncoder().encode(jsonEntry.contents);
         }
         else {
@@ -275,9 +279,32 @@ export class ClipboardEntry {
             .join('');
     }
 
+
+    getMathPixString() {
+        let entry_string;
+        let response = new TextDecoder().decode(this.#bytes);
+        let jsonResonse = JSON.parse(response);
+        if (this.isMathPixText()) {
+            //Get the text field from the response and convert it to bytes
+            entry_string = jsonResonse["text"]
+        }
+        else {
+            entry_string = jsonResonse["latex_styled"]
+        }
+        console.log(entry_string);
+        return entry_string;
+    }
+    getMathPixBytes() {
+        let entry_bytes = new TextEncoder().encode(this.getMathPixString());
+        return entry_bytes;
+    }
+
     getStringValue() {
         if (this.isImage()) {
             return `[Image ${this.asBytes().hash()}]`;
+        }
+        else if (this.isMathPix()) {
+            return this.getMathPixString();
         }
         return new TextDecoder().decode(this.#bytes);
     }
@@ -294,6 +321,14 @@ export class ClipboardEntry {
         this.#favorite = !!val;
     }
 
+    isMathPixText() {
+        return this.#mathPixText;
+    }
+
+    setMathPixText(val) {
+        this.#mathPixText = !!val;
+    }
+
     isText() {
         return this.#mimetype.startsWith('text/') ||
             this.#mimetype === 'STRING' ||
@@ -302,6 +337,10 @@ export class ClipboardEntry {
 
     isImage() {
         return this.#mimetype.startsWith('image/');
+    }
+
+    isMathPix() {
+        return this.#mimetype === 'mathpix';
     }
 
     asBytes() {
