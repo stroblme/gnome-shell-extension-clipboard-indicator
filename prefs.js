@@ -113,7 +113,7 @@ class Settings {
             title: _("Mathpix App ID"),
         });
 
-        this.field_mathpix_api_key = new Adw.EntryRow({
+        this.field_mathpix_api_key = new Adw.PasswordEntryRow({
             title: _("Mathpix API Key"),
         });
 
