@@ -502,7 +502,7 @@ const ClipboardIndicator = GObject.registerClass({
             style_class: 'ci-action-btn',
             can_focus: true,
             child: new St.Icon({
-                icon_name: 'view-refresh-symbolic',
+                icon_name: 'dialog-question-symbolic',
                 style_class: 'system-status-icon'
             }),
             x_align: Clutter.ActorAlign.END,
@@ -520,7 +520,7 @@ const ClipboardIndicator = GObject.registerClass({
             style_class: 'ci-action-btn',
             can_focus: true,
             child: new St.Icon({
-                icon_name: 'dialog-information-symbolic',
+                icon_name: 'edit-redo-symbolic',
                 style_class: 'system-status-icon'
             }),
             x_align: Clutter.ActorAlign.END,
