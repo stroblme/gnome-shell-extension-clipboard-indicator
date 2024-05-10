@@ -502,7 +502,7 @@ const ClipboardIndicator = GObject.registerClass({
             style_class: 'ci-action-btn',
             can_focus: true,
             child: new St.Icon({
-                icon_name: 'dialog-question-symbolic',
+                icon_name: 'font-x-generic-symbolic',
                 style_class: 'system-status-icon'
             }),
             x_align: Clutter.ActorAlign.END,
@@ -515,12 +515,19 @@ const ClipboardIndicator = GObject.registerClass({
         );
         menuItem.actor.add_child(menuItem.mathpixBtn);
 
+        let icon_name;
+        if (entry.isMathPixText()) {
+            icon_name = 'text-x-script-symbolic';
+        }
+        else {
+            icon_name = 'text-html-symbolic';
+        }
         // Switch Latex-Text button
         menuItem.swLatexTextBtn = new St.Button({
             style_class: 'ci-action-btn',
             can_focus: true,
             child: new St.Icon({
-                icon_name: 'edit-redo-symbolic',
+                icon_name: icon_name,
                 style_class: 'system-status-icon'
             }),
             x_align: Clutter.ActorAlign.END,
