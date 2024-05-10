@@ -1196,7 +1196,7 @@ const ClipboardIndicator = GObject.registerClass({
             let entry_bytes = menuItem.entry.getMathPixBytes();
 
             //Use this custom update method to only set the bytes and keep the entry itself unchanged
-            this.#overwriteBytes(menuItem.entry, entry_bytes, 'text/plain;charset=utf-8');
+            this.#updateClipboardExplicit(menuItem.entry, entry_bytes, 'text/plain;charset=utf-8');
 
         }
         else {
@@ -1223,7 +1223,7 @@ const ClipboardIndicator = GObject.registerClass({
                 if (currentlySelected.entry.isMathPix()) {
                     let entry_bytes = menuItem.entry.getMathPixBytes();
 
-                    this.#overwriteBytes(menuItem.entry, entry_bytes, 'text/plain;charset=utf-8');
+                    this.#updateClipboardExplicit(menuItem.entry, entry_bytes, 'text/plain;charset=utf-8');
 
                     //Toggle mathpix text field
                     menuItem.entry.toggleMathPixText();
@@ -1249,13 +1249,13 @@ const ClipboardIndicator = GObject.registerClass({
     }
 
     //similar to updateClipboard, but does not infer the data from the entry
-    #overwriteBytes(entry, bytes, mimetype) {
+    #updateClipboardExplicit(entry, bytes, mimetype) {
         this.extension.clipboard.set_content(CLIPBOARD_TYPE, mimetype, bytes);
         this.#updateIndicatorContent(entry);
     }
 
     #updateClipboard(entry) {
-        this.#overwriteBytes(entry, entry.asBytes(), entry.mimetype());
+        this.#updateClipboardExplicit(entry, entry.asBytes(), entry.mimetype());
     }
 
 
