@@ -143,7 +143,6 @@ const ClipboardIndicator = GObject.registerClass({
             this._buttonText.set_text("...")
         } else {
             if (entry.isText() || entry.isMathPix()) {
-                console.log(entry.getStringValue());
                 this._buttonText.set_text(this._truncate(entry.getStringValue(), MAX_TOPBAR_LENGTH));
                 this._buttonImgPreview.destroy_all_children();
             }
@@ -515,30 +514,30 @@ const ClipboardIndicator = GObject.registerClass({
         );
         menuItem.actor.add_child(menuItem.mathpixBtn);
 
-        let icon_name;
-        if (entry.isMathPixText()) {
-            icon_name = 'text-x-script-symbolic';
-        }
-        else {
-            icon_name = 'text-html-symbolic';
-        }
-        // Switch Latex-Text button
-        menuItem.swLatexTextBtn = new St.Button({
-            style_class: 'ci-action-btn',
-            can_focus: true,
-            child: new St.Icon({
-                icon_name: icon_name,
-                style_class: 'system-status-icon'
-            }),
-            x_align: Clutter.ActorAlign.END,
-            x_expand: false,
-            y_expand: true,
-            visible: entry.isMathPix()
-        });
-        menuItem.swLatexTextBtn.connect('clicked',
-            () => this.#pasteItem(menuItem)
-        );
-        menuItem.actor.add_child(menuItem.swLatexTextBtn);
+        // let icon_name;
+        // if (entry.isMathPixText()) {
+        //     icon_name = 'text-x-script-symbolic';
+        // }
+        // else {
+        //     icon_name = 'text-html-symbolic';
+        // }
+        // // Switch Latex-Text button
+        // menuItem.swLatexTextBtn = new St.Button({
+        //     style_class: 'ci-action-btn',
+        //     can_focus: true,
+        //     child: new St.Icon({
+        //         icon_name: icon_name,
+        //         style_class: 'system-status-icon'
+        //     }),
+        //     x_align: Clutter.ActorAlign.END,
+        //     x_expand: false,
+        //     y_expand: true,
+        //     visible: entry.isMathPix()
+        // });
+        // menuItem.swLatexTextBtn.connect('clicked',
+        //     () => this.#pasteItem(menuItem)
+        // );
+        // menuItem.actor.add_child(menuItem.swLatexTextBtn);
 
         // Paste button
         menuItem.pasteBtn = new St.Button({
@@ -595,6 +594,8 @@ const ClipboardIndicator = GObject.registerClass({
         }
 
         this.#showElements();
+
+        return menuItem;
     }
 
     _favoriteToggle(menuItem) {
@@ -1187,7 +1188,9 @@ const ClipboardIndicator = GObject.registerClass({
         let response_bytes = new TextEncoder().encode(JSON.stringify(response))
         // let response_bytes = new TextEncoder().encode(response['text'])
         //Create a clipboard etnry based on that
-        menuItem.entry = new ClipboardEntry('mathpix', response_bytes, false);
+        this._removeEntry(menuItem, 'delete');
+        let entry = new ClipboardEntry('mathpix', response_bytes, false)
+        menuItem = this._addEntry(entry, true, false);
         // menuItem.entry = new ClipboardEntry('text/plain;charset=utf-8', response_bytes, false);
 
         //Finally use the updated menuItem to run the rest of the routine
