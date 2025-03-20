@@ -30,7 +30,7 @@ class Settings {
             title: _("History Size"),
             adjustment: new Gtk.Adjustment({
                 lower: 1,
-                upper: 200,
+                upper: 10000,
                 step_increment: 1
             })
         });
@@ -48,7 +48,7 @@ class Settings {
             title: _("Max cache file size (MB)"),
             adjustment: new Gtk.Adjustment({
                 lower: 1,
-                upper: 256,
+                upper: 1024,
                 step_increment: 1
             })
         });
@@ -109,6 +109,14 @@ class Settings {
             title: _("Clear clipboard history on system reboot")
         });
 
+        this.field_paste_on_select = new Adw.SwitchRow({
+            title: _("Paste on select")
+        });
+
+        this.field_cache_images = new Adw.SwitchRow({
+            title: _("Cache images"),
+            active: true
+        });
         this.field_mathpix_app_id = new Adw.EntryRow({
             title: _("Mathpix App ID"),
         });
@@ -133,6 +141,8 @@ class Settings {
         this.ui.add(this.field_pinned_on_bottom);
 
         this.behavior.add(this.field_clear_on_boot);
+        this.behavior.add(this.field_paste_on_select);
+        this.behavior.add(this.field_cache_images);
 
         this.limits.add(this.field_size);
         this.limits.add(this.field_cache_size);
@@ -168,6 +178,8 @@ class Settings {
         this.schema.bind(PrefsFields.PINNED_ON_BOTTOM, this.field_pinned_on_bottom, 'active', Gio.SettingsBindFlags.DEFAULT);
         this.schema.bind(PrefsFields.ENABLE_KEYBINDING, this.field_keybinding_activation, 'active', Gio.SettingsBindFlags.DEFAULT);
         this.schema.bind(PrefsFields.CLEAR_ON_BOOT, this.field_clear_on_boot, 'active', Gio.SettingsBindFlags.DEFAULT);
+        this.schema.bind(PrefsFields.PASTE_ON_SELECT, this.field_paste_on_select, 'active', Gio.SettingsBindFlags.DEFAULT);
+        this.schema.bind(PrefsFields.CACHE_IMAGES, this.field_cache_images, 'active', Gio.SettingsBindFlags.DEFAULT);
     }
 
     #createDisplayModeOptions() {

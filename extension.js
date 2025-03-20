@@ -40,11 +40,13 @@ let MATHPIX_API_KEY = "";
 let MAX_TOPBAR_LENGTH = 15;
 let TOPBAR_DISPLAY_MODE = 1; //0 - only icon, 1 - only clipboard content, 2 - both, 3 - neither
 let CLEAR_ON_BOOT = false;
+let PASTE_ON_SELECT = false;
 let DISABLE_DOWN_ARROW = false;
 let STRIP_TEXT = false;
 let KEEP_SELECTED_ON_CLEAR = false;
 let PASTE_BUTTON = true;
 let PINNED_ON_BOTTOM = false;
+let CACHE_IMAGES = true;
 
 export default class ClipboardIndicatorExtension extends Extension {
     enable() {
@@ -451,17 +453,6 @@ const ClipboardIndicator = GObject.registerClass({
         menuItem.entry = entry;
         menuItem.clipContents = entry.getStringValue();
         menuItem.radioGroup = this.clipItemsRadioGroup;
-        const allowedKeysyms = [
-            Clutter.KEY_KP_Enter,
-            Clutter.KEY_Return,
-          ];
-        menuItem.keyPressId = menuItem.connect('key-press-event', (actor, event) => {
-            if (allowedKeysyms.includes(event.get_key_symbol())) {
-                this._onMenuItemSelectedAndMenuClose(menuItem, 'activate')
-                return true;
-            }
-            return false;
-        })
         menuItem.buttonPressId = menuItem.connect('activate',
             autoSet => this._onMenuItemSelectedAndMenuClose(menuItem, autoSet));
         menuItem.connect('key-focus-in', () => {
@@ -470,16 +461,25 @@ const ClipboardIndicator = GObject.registerClass({
             AnimationUtils.ensureActorVisibleInScrollView(viewToScroll, menuItem);
         });
         menuItem.actor.connect('key-press-event', (actor, event) => {
-            if (event.get_key_symbol() === Clutter.KEY_Delete) {
-                this.#selectNextMenuItem(menuItem);
-                this._removeEntry(menuItem, 'delete');
-            }
-            else if (event.get_key_symbol() === Clutter.KEY_p) {
-                this.#selectNextMenuItem(menuItem);
-                this._favoriteToggle(menuItem);
-            }
-            else if (event.get_key_symbol() === Clutter.KEY_v) {
-                this.#pasteItem(menuItem);
+            switch (event.get_key_symbol()) {
+                case Clutter.KEY_Delete:
+                    this.#selectNextMenuItem(menuItem);
+                    this._removeEntry(menuItem, 'delete');
+                    break;
+                case Clutter.KEY_p:
+                    this.#selectNextMenuItem(menuItem);
+                    this._favoriteToggle(menuItem);
+                    break;
+                case Clutter.KEY_v:
+                    this.#pasteItem(menuItem);
+                    break;
+                case Clutter.KEY_KP_Enter:
+                case Clutter.KEY_Return:
+                    if (PASTE_ON_SELECT) {
+                        this.#pasteItem(menuItem);
+                    }
+                    this._onMenuItemSelectedAndMenuClose(menuItem, true);
+                    break;
             }
         })
 
@@ -958,18 +958,19 @@ const ClipboardIndicator = GObject.registerClass({
         MOVE_ITEM_FIRST = settings.get_boolean(PrefsFields.MOVE_ITEM_FIRST);
         NOTIFY_ON_COPY = settings.get_boolean(PrefsFields.NOTIFY_ON_COPY);
         CONFIRM_ON_CLEAR = settings.get_boolean(PrefsFields.CONFIRM_ON_CLEAR);
-        MATHPIX_APP_ID = settings.get_string(PrefsFields.MATHPIX_APP_ID);
-        MATHPIX_API_KEY = settings.get_string(PrefsFields.MATHPIX_API_KEY);
         ENABLE_KEYBINDING = settings.get_boolean(PrefsFields.ENABLE_KEYBINDING);
         MAX_TOPBAR_LENGTH = settings.get_int(PrefsFields.TOPBAR_PREVIEW_SIZE);
+        MATHPIX_APP_ID = settings.get_string(PrefsFields.MATHPIX_APP_ID);
+        MATHPIX_API_KEY = settings.get_string(PrefsFields.MATHPIX_API_KEY);
         TOPBAR_DISPLAY_MODE = settings.get_int(PrefsFields.TOPBAR_DISPLAY_MODE_ID);
         CLEAR_ON_BOOT = settings.get_boolean(PrefsFields.CLEAR_ON_BOOT);
+        PASTE_ON_SELECT = settings.get_boolean(PrefsFields.PASTE_ON_SELECT);
         DISABLE_DOWN_ARROW = settings.get_boolean(PrefsFields.DISABLE_DOWN_ARROW);
         STRIP_TEXT = settings.get_boolean(PrefsFields.STRIP_TEXT);
         KEEP_SELECTED_ON_CLEAR = settings.get_boolean(PrefsFields.KEEP_SELECTED_ON_CLEAR);
         PASTE_BUTTON = settings.get_boolean(PrefsFields.PASTE_BUTTON);
         PINNED_ON_BOTTOM = settings.get_boolean(PrefsFields.PINNED_ON_BOTTOM);
-
+        CACHE_IMAGES = settings.get_boolean(PrefsFields.CACHE_IMAGES);
     }
 
     async _onSettingsChange() {
@@ -1303,13 +1304,20 @@ const ClipboardIndicator = GObject.registerClass({
                 }
 
                 const entry = new ClipboardEntry(type, bytes.get_data(), false);
-                if (entry.isImage()) {
+                if (CACHE_IMAGES && entry.isImage()) {
                     this.registry.writeEntryFile(entry);
                 }
                 resolve(entry);
             }));
 
-            if (result) return result;
+            if (result) {
+                if (!CACHE_IMAGES && result.isImage()) {
+                    return null;
+                }
+                else {
+                    return result;
+                }
+            }
         }
 
         return null;
